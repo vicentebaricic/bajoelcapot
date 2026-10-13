@@ -87,7 +87,14 @@ function answered(q){var e=q.querySelectorAll("input,select,textarea"),k;for(k=0
 function progress(){var qs=f.querySelectorAll(".q:not([hidden])"),n=0;qs.forEach(function(q){if(answered(q))n++});bar.style.width=(qs.length?Math.round(100*n/qs.length):0)+"%"}
 f.addEventListener("input",progress);f.addEventListener("change",progress);
 function reveal(){var on={};f.querySelectorAll("input[type=checkbox]:checked,input[type=radio]:checked").forEach(function(i){on[i.value]=1});f.querySelectorAll("[data-if]").forEach(function(el){el.hidden=!el.dataset.if.split("||").some(function(k){return on[k]})});progress()}
-f.addEventListener("change",reveal);reveal();
+f.addEventListener("change",reveal);
+f.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.type!=="submit")e.preventDefault()});
+var SK="consulta:"+location.pathname;
+function saveDraft(){try{var d={};f.querySelectorAll("input[name],textarea[name],select[name]").forEach(function(el){if(el.type==="checkbox"||el.type==="radio"){if(el.checked)(d[el.name]=d[el.name]||[]).push(el.value)}else if(el.value)d[el.name]=el.value});localStorage.setItem(SK,JSON.stringify(d))}catch(e){}}
+function loadDraft(){try{var d=JSON.parse(localStorage.getItem(SK)||"null");if(!d)return;f.querySelectorAll("input[name],textarea[name],select[name]").forEach(function(el){if(el.type==="checkbox"||el.type==="radio")el.checked=(d[el.name]||[]).indexOf(el.value)>-1;else if(d[el.name]!=null)el.value=d[el.name]})}catch(e){}}
+function clearDraft(){try{localStorage.removeItem(SK)}catch(e){}}
+loadDraft();f.addEventListener("input",saveDraft);f.addEventListener("change",saveDraft);
+reveal();progress();
 var EXCL={"Ninguno de estos":1,"Nada más que responder":1};
 f.addEventListener("change",function(e){var i=e.target;if(i.type!=="checkbox"||!i.checked)return;var ex=!!EXCL[i.value];f.querySelectorAll("input[type=checkbox]").forEach(function(x){if(x!==i&&x.name===i.name&&(ex||EXCL[x.value]))x.checked=false});reveal()});
 function collect(){var out=[];f.querySelectorAll("section.sec").forEach(function(sec){var rows=[];sec.querySelectorAll(".q:not([hidden])").forEach(function(q){var v=[];q.querySelectorAll("input,select,textarea").forEach(function(el){if(el.type==="checkbox"||el.type==="radio"){if(el.checked)v.push(el.value)}else if(el.value.trim())v.push(el.value.trim())});if(v.length)rows.push([q.querySelector(".ql").dataset.t,v.join(", ")])});if(rows.length)out.push([sec.querySelector("h2").dataset.t,rows])});return out}
@@ -107,7 +114,7 @@ f.addEventListener("submit",function(e){e.preventDefault();err.hidden=true;
   var btn=f.querySelector("button.go");btn.disabled=true;btn.textContent="Enviando…";
   var payload={_subject:CFG.subject,resumen:text};data.forEach(function(s){s[1].forEach(function(r){payload[r[0]]=r[1]})});
   fetch(CFG.endpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)})
-   .then(function(r){if(!r.ok)throw 0;showThanks(text,true)})
+   .then(function(r){if(!r.ok)throw 0;clearDraft();showThanks(text,true)})
    .catch(function(){btn.disabled=false;btn.textContent="Enviar respuestas";err.textContent="No pude enviar el formulario. Intenta de nuevo o escríbeme directo por WhatsApp.";err.hidden=false})});
 </script>
 </body>
